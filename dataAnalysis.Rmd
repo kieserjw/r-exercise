@@ -17,35 +17,51 @@ head(arrange(dataset_emails,desc(role)),n=10)
 
 * The top 10 countries by active enterprise users
 ```{r}
-country_tenants <- left_join(dataset_relation, dataset_emails, by='email_id') %>%
-    left_join(., dataset_tenants, by='tenant_id') %>%
-    filter(active_enterprise_users_last_30d > 0) %>%
-    group_by(country) %>%
-    summarise(total_enterprise_users = sum(active_enterprise_users_last_30d))
-head(arrange(country_tenants,desc(total_enterprise_users)),n=11)
-```
-```{r}
+#many to many
+#dataset_emails$country
+#dataset_tenants$active_enterprise_users_last_30d
 
+# includes duplicate counts
+# country_tenants <- left_join(dataset_relation, dataset_emails, by='email_id') %>%
+#     left_join(., dataset_tenants, by='tenant_id') %>%
+#     filter(active_enterprise_users_last_30d > 0) %>%
+#     group_by(country) %>%
+#     summarise(total_enterprise_users = sum(active_enterprise_users_last_30d))
+# head(arrange(country_tenants,desc(total_enterprise_users)),n=11)
+
+non_zero <- filter(dataset_tenants, active_enterprise_users_last_30d > 0)
+country_tenants <- left_join(dataset_relation, non_zero, by='tenant_id') %>%
+    left_join(., dataset_emails, by='email_id') %>%
+    select(tenant_id, country, active_enterprise_users_last_30d) #%>%
+country_tenants <- unique(country_tenants) # doesn't remove all duplicates
+arrange(country_tenants,desc(active_enterprise_users_last_30d))
 ```
 * The top 10 operating systems by open and total tickets
 ```{r}
-
+#many to many
+#dataset_emails$sperating_system
+#dataset_tenants$account_total_tickets
+#dataset_tenants$account_open_tickets
 ```
 * The distribution of pageviews per group
 ```{r}
-
+#one to many
+#dataset_emails$source_group
+#dataset_pageviews$visits
 ```
 * The distribution differences on pageviews per login method
 ```{r}
-
+#one to many
+#dataset_emails$login_method
+#dataset_pageviews$visits
 ```
 * What differences do you find between developers and non-developers?
 ```{r}
-
+#dataset_emails$role
 ```
 * What are the most and least used technologies in tenants?
 ```{r}
-
+#dataset_tenants$technologies_used
 ```
 * Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0
 ```{r}
