@@ -5,11 +5,24 @@ output: html_notebook
 
 We want to analyze our customer data, and better understand them.  Please identify:
 
+```{r setup}
+library(dplyr, magrittr)
+load('exerciseData.rda')
+```
+
+A quick test of viewing the data
+```{r}
+head(arrange(dataset_emails,desc(role)),n=10)
+```
+
 * The top 10 countries by active enterprise users
 ```{r}
-library(plyr)
-load('exerciseData.rda')
-head(arrange(dataset_emails,desc(role)),n=10)
+country_tenants <- left_join(dataset_relation, dataset_emails, by='email_id') %>%
+    left_join(., dataset_tenants, by='tenant_id') %>%
+    filter(active_enterprise_users_last_30d > 0) %>%
+    group_by(country) %>%
+    summarise(total_enterprise_users = sum(active_enterprise_users_last_30d))
+head(arrange(country_tenants,desc(total_enterprise_users)),n=11)
 ```
 ```{r}
 
