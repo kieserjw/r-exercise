@@ -6,7 +6,6 @@ output: html_notebook
 We want to analyze our customer data, and better understand them.  Please identify:
 
 ```{r setup}
-library(dplyr, magrittr, stringr)
 load('exerciseData.rda')
 ```
 
@@ -17,6 +16,7 @@ head(arrange(dataset_emails,desc(role)),n=10)
 
 * The top 10 countries by active enterprise users
 ```{r}
+library(dplyr)
 #many to many
 #dataset_emails$country
 #dataset_tenants$active_enterprise_users_last_30d
@@ -29,8 +29,8 @@ head(arrange(dataset_emails,desc(role)),n=10)
 #     summarise(total_enterprise_users = sum(active_enterprise_users_last_30d))
 # head(arrange(country_tenants,desc(total_enterprise_users)),n=11)
 
-non_zero <- filter(dataset_tenants, active_enterprise_users_last_30d > 0)
-country_tenants <- left_join(dataset_relation, non_zero, by='tenant_id') %>%
+# sort(unique(dataset_tenants$active_enterprise_users_last_30d))
+country_tenants <- left_join(dataset_relation, dataset_tenants, by='tenant_id') %>%
     left_join(., dataset_emails, by='email_id') %>%
     select(tenant_id, country, active_enterprise_users_last_30d) #%>%
 country_tenants <- unique(country_tenants) # doesn't remove all duplicates
@@ -45,9 +45,20 @@ arrange(country_tenants,desc(active_enterprise_users_last_30d))
 ```
 * The distribution of pageviews per group
 ```{r}
+library(dplyr)
 #one to many
 #dataset_emails$source_group
 #dataset_pageviews$visits
+group_pageview <- left_join(dataset_pageviews, dataset_emails, by='email_id') %>%
+    select(email_id, visits, source_group) %>%
+    group_by(source_group) %>%
+    summarise(total_pageviews = sum(visits))
+
+
+group_pageview <- arrange(group_pageview, -total_pageviews)
+group_pageview
+top_results <- head(group_pageview, n = 8)
+pie(top_results$total_pageviews, top_results$source_group, main="Pie Chart of Groups")
 ```
 * The distribution differences on pageviews per login method
 ```{r}
@@ -61,6 +72,7 @@ arrange(country_tenants,desc(active_enterprise_users_last_30d))
 ```
 * What are the most and least used technologies in tenants?
 ```{r}
+library(stringr)
 tech <- as.vector(dataset_tenants$technologies_used)
 tech <- tech[tech != ""]
 comma_count <- sum(str_count(tech, ", "))
