@@ -6,7 +6,7 @@ output: html_notebook
 We want to analyze our customer data, and better understand them.  Please identify:
 
 ```{r setup}
-library(dplyr, magrittr)
+library(dplyr, magrittr, stringr)
 load('exerciseData.rda')
 ```
 
@@ -61,7 +61,28 @@ arrange(country_tenants,desc(active_enterprise_users_last_30d))
 ```
 * What are the most and least used technologies in tenants?
 ```{r}
-#dataset_tenants$technologies_used
+tech <- as.vector(dataset_tenants$technologies_used)
+tech <- tech[tech != ""]
+comma_count <- sum(str_count(tech, ", "))
+tech_reduced <- matrix(NA , nrow=length(tech) + comma_count, ncol=1, dimnames=list(NULL, c("tech_name")))
+index <- 1
+for (t in 1:length(tech)){
+    if (grepl(", ", tech[t])){
+        strings <- strsplit(tech[t], ", ")
+        strings <- strings[[1]]
+        for (s in 1:length(strings)){
+            tech_reduced[index, 1] <- strings[s]
+            index <- index + 1
+        }
+    } else {
+        tech_reduced[index, 1] <- tech[t]
+        index = index + 1
+    }
+}
+tech_reduced <- as.data.frame(tech_reduced)
+frequencies <- as.data.frame(lapply(tech_reduced, table))
+head(frequencies[order(frequencies$tech_name.Freq),], n = 5)
+head(frequencies[order(-frequencies$tech_name.Freq),], n = 5)
 ```
 * Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0
 ```{r}
