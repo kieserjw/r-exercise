@@ -62,9 +62,20 @@ pie(top_results$total_pageviews, top_results$source_group, main="Pie Chart of Gr
 ```
 * The distribution differences on pageviews per login method
 ```{r}
+library(dplyr)
 #one to many
 #dataset_emails$login_method
 #dataset_pageviews$visits
+login_pageview <- left_join(dataset_pageviews, dataset_emails, by='email_id') %>%
+    select(email_id, visits, login_method) %>%
+    group_by(login_method) %>%
+    summarise(total_pageviews = sum(visits))
+
+
+login_pageview <- arrange(login_pageview, -total_pageviews)
+login_pageview
+top_results <- head(login_pageview, n = 5)
+pie(top_results$total_pageviews, top_results$login_method, main="Pie Chart of Login Methods")
 ```
 * What differences do you find between developers and non-developers?
 ```{r}
