@@ -17,24 +17,62 @@ head(arrange(dataset_emails,desc(role)),n=10)
 * The top 10 countries by active enterprise users
 ```{r}
 library(dplyr)
-#many to many
-#dataset_emails$country
-#dataset_tenants$active_enterprise_users_last_30d
+# many to many
+# dataset_emails$country
+# dataset_tenants$active_enterprise_users_last_30d
 
-# includes duplicate counts
-# country_tenants <- left_join(dataset_relation, dataset_emails, by='email_id') %>%
-#     left_join(., dataset_tenants, by='tenant_id') %>%
-#     filter(active_enterprise_users_last_30d > 0) %>%
-#     group_by(country) %>%
-#     summarise(total_enterprise_users = sum(active_enterprise_users_last_30d))
-# head(arrange(country_tenants,desc(total_enterprise_users)),n=11)
-
-# sort(unique(dataset_tenants$active_enterprise_users_last_30d))
+# create a joined table of tenants and emails
 country_tenants <- left_join(dataset_relation, dataset_tenants, by='tenant_id') %>%
     left_join(., dataset_emails, by='email_id') %>%
     select(tenant_id, country, active_enterprise_users_last_30d) #%>%
-country_tenants <- unique(country_tenants) # doesn't remove all duplicates
-arrange(country_tenants,desc(active_enterprise_users_last_30d))
+
+# remove non-zero active users, sort by active users and then tenant id, and remove NULL rows
+country_tenants <- country_tenants[country_tenants$active_enterprise_users_last_30d > 0,]
+country_tenants <- arrange(country_tenants,desc(active_enterprise_users_last_30d), tenant_id)
+country_tenants <- country_tenants[complete.cases(country_tenants), ]
+
+# get a count of unique tenants and create an empty matrix to hold the deduped data
+unique_tenants <- unique(country_tenants$tenant_id)
+result <- matrix(NA, nrow=length(unique_tenants), ncol=2, dimnames=list(NULL, c("country", "active_enterprise_users")))
+
+# create temporary vectors to loop through, as well as placeholder looping variables
+ids <- data.matrix(country_tenants$tenant_id, rownames.force = NA)
+countries <- data.matrix(country_tenants$country, rownames.force = NA)
+actives <- data.matrix(country_tenants$active_enterprise_users_last_30d, rownames.force = NA)
+temp_countries <- countries[1]
+temp_active_users <- actives[1]
+index <- 1
+
+# for a given tenant, make a list of all associated countries, find the mode,
+# and attribute those users to that country
+for (i in 2:length(ids)){
+    if (ids[i] != ids[i-1]){
+        # get the most frequent country from temp list AKA temp_countries.mode()
+        most_freq_country <- names(sort(summary(as.factor(temp_countries)), decreasing=T)[1])
+        # add it to the matrix
+        result[index, 1] <- most_freq_country
+        # add active_users to the matrix
+        result[index, 2] <- temp_active_users
+        # advance index
+        index <- index + 1
+        # set list of countries for next tenant and set temp active users
+        temp_countries <- countries[i]
+        temp_active_users <- actives[i]
+    } else {
+        # add country to list of countries for a given tenant
+        temp_countries <- append(temp_countries, countries[i])
+    }
+}
+# remove null rows
+result <- result[complete.cases(result), ]
+result <- as.data.frame(result)
+
+# convert to numeric values and group by country, then sort by active users
+result$active_enterprise_users <- as.numeric(as.character(result$active_enterprise_users))
+result <- group_by(result, country) %>%
+    summarise(active_enterprise_users = sum(active_enterprise_users)) %>%
+    arrange(desc(active_enterprise_users))
+head(result, n = 10)
 ```
 * The top 10 operating systems by open and total tickets
 ```{r}
@@ -79,7 +117,16 @@ pie(top_results$total_pageviews, top_results$login_method, main="Pie Chart of Lo
 ```
 * What differences do you find between developers and non-developers?
 ```{r}
+library(dplyr)
 #dataset_emails$role
+devs <- dataset_emails[dataset_emails$role == "developer",]
+non_devs <- dataset_emails[dataset_emails$role == "non-developer",]
+nrow(devs)
+nrow(non_devs)
+freq_devs <- as.data.frame(table(devs$browser))
+freq_non_devs <- as.data.frame(table(non_devs$browser))
+#head(freq_devs[order(freq_devs$browser),], n = 5)
+#head(freq_non_devs[order(freq_non_devs$browser),], n = 5)
 ```
 * What are the most and least used technologies in tenants?
 ```{r}

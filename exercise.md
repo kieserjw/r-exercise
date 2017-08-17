@@ -28,12 +28,12 @@ We want to analyze our customer data, and better understand them.
 
 Please identify:
 
-* The top 10 countries by active enterprise users
+** The top 10 countries by active enterprise users
 * The top 10 operating systems by open and total tickets
-* The distribution of pageviews per group
-* The distribution differences on pageviews per login method
+** The distribution of pageviews per group
+** The distribution differences on pageviews per login method
 * What differences do you find between developers and non-developers?
-* What are the most and least used technologies in tenants?
+** What are the most and least used technologies in tenants?
 * Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0
 * Create at least 3 visualizations using R which you consider interesting for the provided data
 
