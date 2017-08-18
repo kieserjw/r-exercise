@@ -186,9 +186,12 @@ head(frequencies[order(frequencies$tech_name.Freq),], n = 5)
 head(frequencies[order(-frequencies$tech_name.Freq),], n = 5)
 ```
 * Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0
-```{r}
-# dataset_emails$sperating_system has a typo
-```
+    + The column dataset_emails$sperating_system has a typo
+    + The column dataset_tenants$technologies_used should be broken out into a seperate dataset.  Comma separated lists in data sets can get nasty.  The dataset would have two columns: "tenant_id" and "technology_used", where the latter column would be a single technology. If there are multiple techs used for one tenant, then there would be multiple rows. 
+    + There is a similar problem for dataset_tenants$connection_types
+    + There seem to be inconsistensies in columns with strings whether the default value is the empty string or NULL.  I would change these to default to NULL for ease of data analysis.
+    + The column datatset_emails$login_method seems to have quite a few values that all start with hus_ followed by an aplha-numeric suffix.  Most of the values for these are fairly non-informative (None, Other, blank, NA).  These email_ids could be test data from auth0 itself. However, I would want to follow up and make sure that these aren't users that are trying to hide their tracks for nefarious purposes.
+
 * Create at least 3 visualizations using R which you consider interesting for the provided data
 ```{r}
 
