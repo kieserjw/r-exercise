@@ -187,38 +187,51 @@ combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants,
 * What are the most and least used technologies in tenants?
 ```{r}
 library(stringr)
-# make column into vector and remove empty strings
-tech <- as.vector(dataset_tenants$technologies_used)
-tech <- tech[tech != ""]
 
-# get count of commas in elements and make a matrix to store the output
-comma_count <- sum(str_count(tech, ", "))
-tech_reduced <- matrix(NA , nrow=length(tech) + comma_count, ncol=1, dimnames=list(NULL, c("tech_name")))
+expand_commas <- function(dataset_, col_num){
+    # save the column names for later
+    old_email_name <- colnames(dataset_)[col_num]
 
-# for each value, if it has a comma, split it into a list and add each one to the matrix
-# if it doesn't have a comma, add it to the list
-index <- 1
-for (t in 1:length(tech)){
-    if (grepl(", ", tech[t])){
-        strings <- strsplit(tech[t], ", ")
-        strings <- strings[[1]]
-        for (s in 1:length(strings)){
-            tech_reduced[index, 1] <- strings[s]
-            index <- index + 1
+    # rename the column for ease of reference
+    colnames(dataset_)[col_num] <- "metric"
+
+    # make column into vector and remove empty strings
+    metric <- as.vector(dataset_$metric)
+    metric <- metric[metric != ""]
+    
+    # get count of commas in elements and make a matrix to store the output
+    comma_count <- sum(str_count(metric, ", "))
+    metric_reduced <- matrix(NA , nrow=length(metric) + comma_count, ncol=1, dimnames=list(NULL, c("metric")))
+    
+    # for each value, if it has a comma, split it into a list and add each one to the matrix
+    # if it doesn't have a comma, add it to the list
+    index <- 1
+    for (t in 1:length(metric)){
+        if (grepl(", ", metric[t])){
+            strings <- strsplit(metric[t], ", ")
+            strings <- strings[[1]]
+            for (s in 1:length(strings)){
+                metric_reduced[index, 1] <- strings[s]
+                index <- index + 1
+            }
+        } else {
+            metric_reduced[index, 1] <- metric[t]
+            index = index + 1
         }
-    } else {
-        tech_reduced[index, 1] <- tech[t]
-        index = index + 1
     }
+    
+    # convert to a data frame and get a frequency count
+    metric_reduced <- as.data.frame(metric_reduced)
+    frequencies <- as.data.frame(lapply(metric_reduced, table))
+    
+    return(frequencies)
 }
+# dataset_tenants$technologies_used
+result <- expand_commas(dataset_tenants, 9)
 
-# convert to a data frame and get a frequency count
-tech_reduced <- as.data.frame(tech_reduced)
-frequencies <- as.data.frame(lapply(tech_reduced, table))
-
-# display the top 5 and bottom 5
-head(frequencies[order(frequencies$tech_name.Freq),], n = 5)
-head(frequencies[order(-frequencies$tech_name.Freq),], n = 5)
+# display the bottom 5 and top 5
+head(result[order(result$metric.Freq),], n = 5)
+head(result[order(-result$metric.Freq),], n = 5)
 ```
 * Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0
     + The column dataset_emails$sperating_system has a typo
