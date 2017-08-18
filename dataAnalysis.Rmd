@@ -8,78 +8,96 @@ We want to analyze our customer data, and better understand them.  Please identi
 ```{r setup}
 load('exerciseData.rda')
 ```
-
-A quick test of viewing the data
-```{r}
-head(arrange(dataset_emails,desc(role)),n=10)
-```
-
-* The top 10 countries by active enterprise users
+* The top 10 email_cols by active enterprise users
 ```{r}
 library(dplyr)
+
 # many to many
-# dataset_emails$country
-# dataset_tenants$active_enterprise_users_last_30d
+# dataset_emails$email_col
+# dataset_tenants$tenant_col
 
-# create a joined table of tenants and emails
-country_tenants <- left_join(dataset_relation, dataset_tenants, by='tenant_id') %>%
-    left_join(., dataset_emails, by='email_id') %>%
-    select(tenant_id, country, active_enterprise_users_last_30d) #%>%
-
-# remove non-zero active users, sort by active users and then tenant id, and remove NULL rows
-country_tenants <- country_tenants[country_tenants$active_enterprise_users_last_30d > 0,]
-country_tenants <- arrange(country_tenants,desc(active_enterprise_users_last_30d), tenant_id)
-country_tenants <- country_tenants[complete.cases(country_tenants), ]
-
-# get a count of unique tenants and create an empty matrix to hold the deduped data
-unique_tenants <- unique(country_tenants$tenant_id)
-result <- matrix(NA, nrow=length(unique_tenants), ncol=2, dimnames=list(NULL, c("country", "active_enterprise_users")))
-
-# create temporary vectors to loop through, as well as placeholder looping variables
-ids <- data.matrix(country_tenants$tenant_id, rownames.force = NA)
-countries <- data.matrix(country_tenants$country, rownames.force = NA)
-actives <- data.matrix(country_tenants$active_enterprise_users_last_30d, rownames.force = NA)
-temp_countries <- countries[1]
-temp_active_users <- actives[1]
-index <- 1
-
-# for a given tenant, make a list of all associated countries, find the mode,
-# and attribute those users to that country
-for (i in 2:length(ids)){
-    if (ids[i] != ids[i-1]){
-        # get the most frequent country from temp list AKA temp_countries.mode()
-        most_freq_country <- names(sort(summary(as.factor(temp_countries)), decreasing=T)[1])
-        # add it to the matrix
-        result[index, 1] <- most_freq_country
-        # add active_users to the matrix
-        result[index, 2] <- temp_active_users
-        # advance index
-        index <- index + 1
-        # set list of countries for next tenant and set temp active users
-        temp_countries <- countries[i]
-        temp_active_users <- actives[i]
-    } else {
-        # add country to list of countries for a given tenant
-        temp_countries <- append(temp_countries, countries[i])
+combine_email_and_tenant_data <- function(relation, emails, tenants, email_col_num, tenant_col_num){
+    # save the column names for later
+    old_email_name <- colnames(emails)[email_col_num]
+    old_tenant_name <- colnames(tenants)[tenant_col_num]
+    
+    # rename the columns for ease of reference
+    colnames(emails)[email_col_num] <- "email_col"
+    colnames(tenants)[tenant_col_num] <- "tenant_col"
+    
+    # create a joined table of tenants and emails
+    email_tenant <- left_join(relation, tenants, by='tenant_id') %>%
+        left_join(., emails, by='email_id') %>%
+        select(tenant_id, email_col, tenant_col) #%>%
+    
+    # remove non-zero tenant_col, sort by tenant_col and then tenant id, and remove NULL rows
+    email_tenant <- email_tenant[email_tenant$tenant_col > 0,]
+    email_tenant <- arrange(email_tenant,desc(tenant_col), tenant_id)
+    email_tenant <- email_tenant[complete.cases(email_tenant), ]
+    
+    # get a count of unique tenants and create an empty matrix to hold the deduped data
+    unique_tenants <- unique(email_tenant$tenant_id)
+    result <- matrix(NA, nrow=length(unique_tenants), ncol=2, dimnames=list(NULL, c("email_col", "tenant_col")))
+    
+    # create temporary vectors to loop through, as well as placeholder looping variables
+    tenant_ids <- data.matrix(email_tenant$tenant_id, rownames.force = NA)
+    email_cols <- data.matrix(email_tenant$email_col, rownames.force = NA)
+    tenant_cols <- data.matrix(email_tenant$tenant_col, rownames.force = NA)
+    temp_email_cols <- email_cols[1]
+    temp_tenant_col <- tenant_cols[1]
+    index <- 1
+    
+    # for a given tenant, make a list of all associated email_cols, find the mode,
+    # and attribute those tenant_cols to that email_col
+    for (i in 2:length(tenant_ids)){
+        if (tenant_ids[i] != tenant_ids[i-1]){
+            # get the most frequent email_col from temp list AKA temp_email_cols.mode()
+            most_freq_email_col <- names(sort(summary(as.factor(temp_email_cols)), decreasing=T)[1])
+            # add it to the matrix
+            result[index, 1] <- most_freq_email_col
+            # add tenant_col to the matrix
+            result[index, 2] <- temp_tenant_col
+            # advance index
+            index <- index + 1
+            # set list of email_cols for next tenant and set temp tenant_col
+            temp_email_cols <- email_cols[i]
+            temp_tenant_col <- tenant_cols[i]
+        } else {
+            # add email_col to list of email_cols for a given tenant
+            temp_email_cols <- append(temp_email_cols, email_cols[i])
+        }
     }
+    # remove null rows
+    result <- result[complete.cases(result), ]
+    result <- as.data.frame(result)
+    
+    # convert to numeric values and group by email_col, then sort by tenant_col
+    result$tenant_col <- as.numeric(as.character(result$tenant_col))
+    result <- group_by(result, email_col) %>%
+        summarise(tenant_col = sum(tenant_col)) %>%
+        arrange(desc(tenant_col))
+    
+    colnames(result)[1] <- old_email_name
+    colnames(result)[2] <- old_tenant_name
+    return(result)
 }
-# remove null rows
-result <- result[complete.cases(result), ]
-result <- as.data.frame(result)
-
-# convert to numeric values and group by country, then sort by active users
-result$active_enterprise_users <- as.numeric(as.character(result$active_enterprise_users))
-result <- group_by(result, country) %>%
-    summarise(active_enterprise_users = sum(active_enterprise_users)) %>%
-    arrange(desc(active_enterprise_users))
-head(result, n = 10)
+country_activeusers <- combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 3, 6)
+head(country_activeusers, n = 10)
 ```
 * The top 10 operating systems by open and total tickets
 ```{r}
 #many to many
 #dataset_emails$sperating_system
-#dataset_tenants$account_total_tickets
 #dataset_tenants$account_open_tickets
+#dataset_tenants$account_total_tickets
+
+# use function from previous exercise
+operatingsystem_opentickets <- combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 8, 12)
+head(operatingsystem_opentickets, n = 10)
+
+operatingsystem_totaltickets <- combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 8, 13)
+head(operatingsystem_totaltickets, n = 10)
+
 ```
 * The distribution of pageviews per group
 ```{r}
@@ -91,7 +109,6 @@ group_pageview <- left_join(dataset_pageviews, dataset_emails, by='email_id') %>
     select(email_id, visits, source_group) %>%
     group_by(source_group) %>%
     summarise(total_pageviews = sum(visits))
-
 
 group_pageview <- arrange(group_pageview, -total_pageviews)
 group_pageview
@@ -108,7 +125,6 @@ login_pageview <- left_join(dataset_pageviews, dataset_emails, by='email_id') %>
     select(email_id, visits, login_method) %>%
     group_by(login_method) %>%
     summarise(total_pageviews = sum(visits))
-
 
 login_pageview <- arrange(login_pageview, -total_pageviews)
 login_pageview
@@ -156,7 +172,7 @@ head(frequencies[order(-frequencies$tech_name.Freq),], n = 5)
 ```
 * Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0
 ```{r}
-
+# dataset_emails$sperating_system has a typo
 ```
 * Create at least 3 visualizations using R which you consider interesting for the provided data
 ```{r}
