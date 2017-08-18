@@ -52,6 +52,7 @@ combine_email_and_tenant_data <- function(relation, emails, tenants, email_col_n
     for (i in 2:length(tenant_ids)){
         if (tenant_ids[i] != tenant_ids[i-1]){
             # get the most frequent email_col from temp list AKA temp_email_cols.mode()
+            # TODO: create tiebreaker method
             most_freq_email_col <- names(sort(summary(as.factor(temp_email_cols)), decreasing=T)[1])
             # add it to the matrix
             result[index, 1] <- most_freq_email_col
@@ -147,17 +148,40 @@ top_results <- head(output, n = 5)
 pie(top_results$total_pageviews, top_results$login_method, main="Pageviews by Login Methods")
 ```
 * What differences do you find between developers and non-developers?
+    + There are far more developers than non -- over 11 times as many
+    + Company sizes are faily similarly distributed between devs and non-devs in terms of mean and standard deviation
+    + Most other metrics are also similarly distributed (e.g., country, source_group, browser).  However the operating systems for devopers put Mac OS X in a slight lead with Windows 10 right behind and Windows 7 trailing.  However, for non-developers, Windows 10 has a dominant lead by almost 40% over Mac OS X, with Windows 7 in a close third place.
+    + Even though developer roles outnumber non-devs 11:1, they account for over 16 times as many pageviews as non-devs
+    + Developers account for over 36 times as many active users in the last 30 days as non-devs
 ```{r}
 library(dplyr)
 #dataset_emails$role
+
+# select only rows that are developers or non
 devs <- dataset_emails[dataset_emails$role == "developer",]
 non_devs <- dataset_emails[dataset_emails$role == "non-developer",]
-nrow(devs)
-nrow(non_devs)
-freq_devs <- as.data.frame(table(devs$browser))
-freq_non_devs <- as.data.frame(table(non_devs$browser))
-#head(freq_devs[order(freq_devs$browser),], n = 5)
-#head(freq_non_devs[order(freq_non_devs$browser),], n = 5)
+
+# calcualte total number of devs/non-devs
+print(c("num (devs):", nrow(devs)))
+print(c("num (non-devs):", nrow(non_devs)))
+
+# calculate mean and sttdev of company size for each role type
+dev_employees <- devs[complete.cases(devs$company_employees), ]$company_employees
+non_dev_employees <- non_devs[complete.cases(non_devs$company_employees), ]$company_employees
+print(c("mean company size (dev):", mean(dev_employees)))
+print(c("mean company size (non-devs):", mean(non_dev_employees)))
+print(c("stddev company size (dev):", sd(dev_employees)))
+print(c("stddev company size (non-devs):", sd(non_dev_employees)))
+
+# compare operating systems
+arrange(as.data.frame(table(devs$sperating_system)), desc(Freq))
+arrange(as.data.frame(table(non_devs$sperating_system)), desc(Freq))
+
+# compate pagviews
+head(pageviews_by_metric(dataset_pageviews, dataset_emails, 4), n = 4)
+
+# compare active users in the last 30 days
+combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 4, 4)
 ```
 * What are the most and least used technologies in tenants?
 ```{r}
