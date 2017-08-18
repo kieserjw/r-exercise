@@ -13,8 +13,6 @@ load('exerciseData.rda')
 library(dplyr)
 
 # many to many
-# dataset_emails$email_col
-# dataset_tenants$tenant_col
 
 combine_email_and_tenant_data <- function(relation, emails, tenants, email_col_num, tenant_col_num){
     # save the column names for later
@@ -85,20 +83,23 @@ combine_email_and_tenant_data <- function(relation, emails, tenants, email_col_n
     colnames(result)[2] <- old_tenant_name
     return(result)
 }
+# dataset_emails$country = 3
+# dataset_tenants$active_enterprise_users_last_30d = 6
 country_activeusers <- combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 3, 6)
 head(country_activeusers, n = 10)
 ```
 * The top 10 operating systems by open and total tickets
 ```{r}
 #many to many
-#dataset_emails$sperating_system
-#dataset_tenants$account_open_tickets
-#dataset_tenants$account_total_tickets
 
 # use function from previous exercise
+# dataset_emails$sperating_system = 8
+# dataset_tenants$account_open_tickets = 12
 operatingsystem_opentickets <- combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 8, 12)
 head(operatingsystem_opentickets, n = 10)
 
+# dataset_emails$sperating_system = 8
+# dataset_tenants$account_total_tickets = 13
 operatingsystem_totaltickets <- combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants, 8, 13)
 head(operatingsystem_totaltickets, n = 10)
 
@@ -107,8 +108,6 @@ head(operatingsystem_totaltickets, n = 10)
 ```{r}
 library(dplyr)
 #one to many
-#dataset_emails$source_group
-#dataset_pageviews$visits
 
 pageviews_by_metric <- function(pageviews, emails, email_col_num){
     # save the column names for later
@@ -132,6 +131,7 @@ pageviews_by_metric <- function(pageviews, emails, email_col_num){
     return(group_pageview)
 }
 
+# dataset_emails$source_group = 7
 output <- pageviews_by_metric(dataset_pageviews, dataset_emails, 7)
 output
 top_results <- head(output, n = 8)
@@ -141,10 +141,9 @@ pie(top_results$total_pageviews, top_results$source_group, main="Pageviews by So
 ```{r}
 library(dplyr)
 #one to many
-#dataset_emails$login_method
-#dataset_pageviews$visits
 
 # use function from previous exercise
+# dataset_emails$login_method = 11
 output <- pageviews_by_metric(dataset_pageviews, dataset_emails, 11)
 output
 top_results <- head(output, n = 5)
@@ -158,7 +157,6 @@ pie(top_results$total_pageviews, top_results$login_method, main="Pageviews by Lo
     + Developers account for over 36 times as many active users in the last 30 days as non-devs
 ```{r}
 library(dplyr)
-#dataset_emails$role
 
 # select only rows that are developers or non
 devs <- dataset_emails[dataset_emails$role == "developer",]
@@ -180,7 +178,7 @@ print(c("stddev company size (non-devs):", sd(non_dev_employees)))
 arrange(as.data.frame(table(devs$sperating_system)), desc(Freq))
 arrange(as.data.frame(table(non_devs$sperating_system)), desc(Freq))
 
-# compate pagviews
+# compare pageviews
 head(pageviews_by_metric(dataset_pageviews, dataset_emails, 4), n = 4)
 
 # compare active users in the last 30 days
@@ -189,10 +187,16 @@ combine_email_and_tenant_data(dataset_relation, dataset_emails, dataset_tenants,
 * What are the most and least used technologies in tenants?
 ```{r}
 library(stringr)
+# make column into vector and remove empty strings
 tech <- as.vector(dataset_tenants$technologies_used)
 tech <- tech[tech != ""]
+
+# get count of commas in elements and make a matrix to store the output
 comma_count <- sum(str_count(tech, ", "))
 tech_reduced <- matrix(NA , nrow=length(tech) + comma_count, ncol=1, dimnames=list(NULL, c("tech_name")))
+
+# for each value, if it has a comma, split it into a list and add each one to the matrix
+# if it doesn't have a comma, add it to the list
 index <- 1
 for (t in 1:length(tech)){
     if (grepl(", ", tech[t])){
@@ -207,8 +211,12 @@ for (t in 1:length(tech)){
         index = index + 1
     }
 }
+
+# convert to a data frame and get a frequency count
 tech_reduced <- as.data.frame(tech_reduced)
 frequencies <- as.data.frame(lapply(tech_reduced, table))
+
+# display the top 5 and bottom 5
 head(frequencies[order(frequencies$tech_name.Freq),], n = 5)
 head(frequencies[order(-frequencies$tech_name.Freq),], n = 5)
 ```
