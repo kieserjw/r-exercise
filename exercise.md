@@ -36,7 +36,7 @@ Please identify:
 * ~~What differences do you find between developers and non-developers?~~
 * ~~What are the most and least used technologies in tenants?~~
 * ~~Please mark any inconsistencies you find in the data that you'd research further if you were working at Auth0~~
-* Create at least 3 visualizations using R which you consider interesting for the provided data
+* ~~Create at least 3 visualizations using R which you consider interesting for the provided data~~
 
 Please create an R script which can be re-executed for this exercise, and post any doubts you may have in Slack.
 Happy data wrangling!

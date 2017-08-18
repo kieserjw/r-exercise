@@ -226,7 +226,7 @@ expand_commas <- function(dataset_, col_num){
     
     return(frequencies)
 }
-# dataset_tenants$technologies_used
+# dataset_tenants$technologies_used = 9
 result <- expand_commas(dataset_tenants, 9)
 
 # display the bottom 5 and top 5
@@ -241,6 +241,29 @@ head(result[order(-result$metric.Freq),], n = 5)
     + The column datatset_emails$login_method seems to have quite a few values that all start with hus_ followed by an aplha-numeric suffix.  Most of the values for these are fairly non-informative (None, Other, blank, NA).  These email_ids could be test data from auth0 itself. However, I would want to follow up and make sure that these aren't users that are trying to hide their tracks for nefarious purposes.
 
 * Create at least 3 visualizations using R which you consider interesting for the provided data
+    + The first chart simply shows the distribution of connection types.  Most users are using username/pw or other social media accounts to log in, as opposed to using more secure methods.
+    + The second chart shows that there are two correlation types between active users and active enterprise users.  One correlation seems to follow a linear curve where both types increase with the other.  The other correlation shows no relationship between increasing active users and active enterprise users.
+    + The final chart is just for fun to see how many people are not using their native browser for the Mac and Windows operating systems
 ```{r}
+library(ggplot2)
+library(plotly)
 
+# dataset_tenants$connection_types = 8
+result <- expand_commas(dataset_tenants, 8)
+result <- result[order(-result$metric.Freq),]
+pie(result$metric.Freq, result$metric.Var1, main="Connection Type Distribution")
+
+tmp <- filter(dataset_tenants, active_users_last_30d < 1500000 & active_users_last_30d > 0 & active_enterprise_users_last_30d > 10)
+ggplot(data=tmp, aes(x=active_users_last_30d, y=active_enterprise_users_last_30d, group=1)) +
+    geom_point() +
+    ggtitle("Active enterprise users vs Active Users")
+
+windows_traitors <- filter(dataset_emails, grepl("Windows.*", sperating_system) & !grepl("IE", browser))
+mac_traitors <- filter(dataset_emails, grepl("Mac OS X", sperating_system) & !grepl("Safari", browser))
+plot_ly(
+  x = c("windows_traitors", "mac_traitors"),
+  y = c(nrow(windows_traitors), nrow(mac_traitors)),
+  name = "Number of Traitors (to their Operating Systems)",
+  type = "bar"
+)
 ```
