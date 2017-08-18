@@ -105,15 +105,33 @@ library(dplyr)
 #one to many
 #dataset_emails$source_group
 #dataset_pageviews$visits
-group_pageview <- left_join(dataset_pageviews, dataset_emails, by='email_id') %>%
-    select(email_id, visits, source_group) %>%
-    group_by(source_group) %>%
-    summarise(total_pageviews = sum(visits))
 
-group_pageview <- arrange(group_pageview, -total_pageviews)
-group_pageview
-top_results <- head(group_pageview, n = 8)
-pie(top_results$total_pageviews, top_results$source_group, main="Pie Chart of Groups")
+pageviews_by_metric <- function(pageviews, emails, email_col_num){
+    # save the column names for later
+    old_email_name <- colnames(emails)[email_col_num]
+    
+    # rename the columns for ease of reference
+    colnames(emails)[email_col_num] <- "email_col"
+    
+    # join tables, select and group columns and sum the number of pageviews
+    group_pageview <- left_join(pageviews, emails, by='email_id') %>%
+        select(email_id, visits, email_col) %>%
+        group_by(email_col) %>%
+        summarise(total_pageviews = sum(visits))
+    
+    # order descending by pageviews
+    group_pageview <- arrange(group_pageview, -total_pageviews)
+    
+    # rename column back to old name
+    colnames(group_pageview)[1] <- old_email_name
+    
+    return(group_pageview)
+}
+
+output <- pageviews_by_metric(dataset_pageviews, dataset_emails, 7)
+output
+top_results <- head(output, n = 8)
+pie(top_results$total_pageviews, top_results$source_group, main="Pageviews by Source Group")
 ```
 * The distribution differences on pageviews per login method
 ```{r}
@@ -121,15 +139,12 @@ library(dplyr)
 #one to many
 #dataset_emails$login_method
 #dataset_pageviews$visits
-login_pageview <- left_join(dataset_pageviews, dataset_emails, by='email_id') %>%
-    select(email_id, visits, login_method) %>%
-    group_by(login_method) %>%
-    summarise(total_pageviews = sum(visits))
 
-login_pageview <- arrange(login_pageview, -total_pageviews)
-login_pageview
-top_results <- head(login_pageview, n = 5)
-pie(top_results$total_pageviews, top_results$login_method, main="Pie Chart of Login Methods")
+# use function from previous exercise
+output <- pageviews_by_metric(dataset_pageviews, dataset_emails, 11)
+output
+top_results <- head(output, n = 5)
+pie(top_results$total_pageviews, top_results$login_method, main="Pageviews by Login Methods")
 ```
 * What differences do you find between developers and non-developers?
 ```{r}

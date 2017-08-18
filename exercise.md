@@ -29,7 +29,7 @@ We want to analyze our customer data, and better understand them.
 Please identify:
 
 ** The top 10 countries by active enterprise users
-* The top 10 operating systems by open and total tickets
+** The top 10 operating systems by open and total tickets
 ** The distribution of pageviews per group
 ** The distribution differences on pageviews per login method
 * What differences do you find between developers and non-developers?
