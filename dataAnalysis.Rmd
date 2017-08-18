@@ -48,7 +48,10 @@ combine_email_and_tenant_data <- function(relation, emails, tenants, email_col_n
     index <- 1
     
     # for a given tenant, make a list of all associated email_cols, find the mode,
-    # and attribute those tenant_cols to that email_col
+    # and attribute those tenant_cols to that email_col.  I chose to use this method of 
+    # deduping because there is no way to do a proportional attribution for a list of values.
+    # Instead of trying to assign fractional portions of value from the tenant_col, it was 
+    # less misleading to simply assing them all to the most common email_col value for that tenant
     for (i in 2:length(tenant_ids)){
         if (tenant_ids[i] != tenant_ids[i-1]){
             # get the most frequent email_col from temp list AKA temp_email_cols.mode()
